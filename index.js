@@ -8,7 +8,7 @@ if (arg == "new") {
 
 	var currentPath = process.cwd();
 
-	var files = ["/template/index.jst.html", "/template/base.less", "/template/style.less", "/template/script.js", "/Makefile", "/bin/dl-sheet.js", "/bin/compile.js"];
+	var files = ["/src/index.jst.html", "/src/base.less", "/src/style.less", "/src/script.js", "/Makefile", "/bin/dl-sheet.js", "/bin/compile.js"];
 
 	if (!fs.existsSync(currentPath + "/src")) {
 	    fs.mkdirSync(currentPath + "/src");
@@ -27,7 +27,7 @@ if (arg == "new") {
 	}
 
 	files.forEach(function(f){
-		fs.copyFile(__dirname + f, currentPath + f.replace("template", "src"), (err) => {
+		fs.copyFile(__dirname + f, currentPath + f, (err) => {
 		  if (err) throw err;
 		});
 	});

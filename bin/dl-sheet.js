@@ -74,18 +74,15 @@ function getNewToken(oAuth2Client, callback) {
 function saveFile(auth) {
   const sheets = google.sheets({version: 'v4', auth});
   sheets.spreadsheets.values.get({
-    spreadsheetId: '1qwUsVIlGFlc4uUJpNKAE9mK7pao6DxXgMbL8pIoIFBA',
-    range: 'main!A:K',
+    spreadsheetId: process.argv[2],
+    range: process.argv[3] + '!A:Z',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
     const rows = res.data.values;
 
-    console.log(rows[0])
-
     if (rows.length) {
 
       var out = [];
-
       var header = rows[0];
 
       rows.forEach(function(d,i){
@@ -96,11 +93,9 @@ function saveFile(auth) {
           })
           out.push(newrow);
         }
-      })
+      });
 
-      out = out.filter(d => d.status != "退")
-
-      fs.writeFileSync(__dirname + "/../data/category.json", JSON.stringify(out))
+      fs.writeFileSync(__dirname + "/../data/" + process.argv[4] + ".json", JSON.stringify(out, null, 2))
     } else {
       console.log('No data found.');
     }
