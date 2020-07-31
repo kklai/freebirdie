@@ -1,0 +1,22 @@
+{
+  "name": "freebirdie",
+  "version": "1.0.0",
+  "description": "project setup",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kklai/freebirdie.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kklai/freebirdie/issues"
+  },
+  "homepage": "https://github.com/kklai/freebirdie#readme",
+  "bin": {
+     "freebirdie": "./index.js"
+   }
+}
