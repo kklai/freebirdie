@@ -1,5 +1,51 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <div class="g-body">
-		
-	<div class="g-text">Hello world</div>
+
+	<div class="g-header">
+	<% doc.forEach(function(d){ %>
+
+		<% if (d.type == "break") { %>
+			<div class="g-break"><em>*</em><em>*</em><em>*</em></div>
+		<% } %>
+
+		<% if (d.type == "start") { %>
+			<div class="<%= d.value %>">
+		<% } %>
+
+		<% if (d.type == "end") { %>
+			</div>
+		<% } %>
+
+		<% if (d.type == "kicker") { %>
+			<div class="g-kicker"><div class="g-inner"><%- d.value %></div></div>
+		<% } %>
+
+		<% if (d.type == "headline") { %>
+			<div class="g-headline"><div class="g-inner"><%- d.value %></div></div>
+			</div>
+		<% } %>
+
+		<% if (d.type == "text") { %>
+			<div class="g-text"><%- d.value %></div>
+		<% } %>
+
+		<% if (d.type == "graphic") { %>
+			<div class="g-graphic">
+				<div class="<%= d.asset.replace('div.', '').split('.').join(' ') %>"></div>
+			</div>
+		<% } %>
+
+		<% if (d.type == "image") { %>
+			<div class="g-image">
+				<img src="<%= d.asset %>">
+				<% if (d.credit) { %><div class="g-credit"><%= d.credit %></div><% } %>
+			</div>
+		<% } %>
+
+	<% }) %>
 
 </div>
+
+<script src="https://interactive.thestandnews.com/scripts/d3_.js"></script>
+<!-- <script>var data = <%- JSON.stringify(rows) %></script> -->

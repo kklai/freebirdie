@@ -81,15 +81,27 @@ function printDocTitle(auth) {
     var out = [];
     var newobj = {};
     var currobject;
+    var add = true;
 
     res.data.body.content.forEach(function(d){
 
-      if (d.paragraph && d.paragraph.elements) {
+      if (d.paragraph && d.paragraph.elements && add) {
 
-        var text = d.paragraph.elements[0].textRun.content.replace("\n", "");
+        var text = "";
+        d.paragraph.elements.forEach(function(el){
+          if (el.textRun.textStyle.link) {
+            text += "<a href='" + el.textRun.textStyle.link.url + "'>" + el.textRun.content.split("\n").join("") + "</a>"
+          } else {
+            text += el.textRun.content.split("\n").join("");
+          }
+        })
 
-        if (text == "{.graphic}") {
-          newobj = {type: "graphic"};
+        if (text == ":ignore") {
+
+          add = false;
+
+        } else if (text.indexOf("{.") > -1) {
+          newobj = {type: text.split("{.")[1].replace("}", "")};
           currobject = true;
 
         } else if (currobject && text == "{}") {
@@ -99,10 +111,12 @@ function printDocTitle(auth) {
 
         } else if (currobject && text.indexOf(":") > -1) {
 
-          var split = text.split(":"); 
-          newobj[split[0].trim()] = split[1].trim();
+          var split = text.split(":");
+          var varname = split[0].trim();
+          split.shift();
+          newobj[varname] = split.join(":").trim();
 
-        } else if (text.indexOf(":") > -1) {
+        } else if (text.indexOf(":") > -1 && text.indexOf("a href") == -1) {
 
           var split = text.split(":"); 
           out.push({
