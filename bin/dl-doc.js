@@ -79,9 +79,11 @@ function printDocTitle(auth) {
     if (err) return console.log('The API returned an error: ' + err);
     
     var out = [];
-    var newobj = {};
-    var currobject;
+    var newobj = {}, newarr = [], newarrobj = {};
+    var currobject, currarr, arrstart, arrname;
     var add = true;
+
+    fs.writeFileSync("bin/body.json", JSON.stringify(res.data.body.content, null, 2))
 
     res.data.body.content.forEach(function(d){
 
@@ -89,10 +91,22 @@ function printDocTitle(auth) {
 
         var text = "";
         d.paragraph.elements.forEach(function(el){
-          if (el.textRun.textStyle.link) {
+
+          if (el.textRun && el.textRun.textStyle.link) {
             text += "<a href='" + el.textRun.textStyle.link.url + "'>" + el.textRun.content.split("\n").join("") + "</a>"
-          } else {
-            text += el.textRun.content.split("\n").join("");
+          } else if (el.textRun) {
+
+            var t = el.textRun.content.split("\n").join("");
+
+            if (t != ":ignore" && t != "" && el.textRun.textStyle.bold) {
+              text += "<strong>"
+            }
+
+            text += t;
+
+            if (t != ":ignore" && t != "" && el.textRun.textStyle.bold) {
+              text += "</strong>"
+            }
           }
         })
 
@@ -108,6 +122,40 @@ function printDocTitle(auth) {
 
           out.push(newobj);
           currobject = false;
+
+
+        } else if (currobject && text.indexOf("[.") > -1) {
+
+          currarr = true;
+          arrname = text.replace("[.", "").replace("]", "");
+
+        } else if (currarr && text != "[]") {
+
+          var split = text.split(":");
+          var varname = split[0].trim();
+
+          if (!arrstart) {
+            arrstart = varname;
+            newarrobj = {}
+          } else if (arrstart == varname) {
+            newarr.push(newarrobj);
+            newarrobj = {};
+          }
+
+          split.shift();
+
+          if (varname != "") {
+            newarrobj[varname] = split.join(":").trim();
+          }
+
+        } else if (currarr && text == "[]") {
+
+          newarr.push(newarrobj);
+          newobj[arrname] = newarr;
+          currarr = false;
+          newarr = [];
+          newarrobj = {};
+          arrstart = undefined;
 
         } else if (currobject && text.indexOf(":") > -1) {
 

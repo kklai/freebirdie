@@ -1,51 +1,65 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <div class="g-body">
-
-	<div class="g-header">
-	<% doc.forEach(function(d){ %>
-
-		<% if (d.type == "break") { %>
+	<% data.doc.forEach(function(d){ -%>
+		<% if (d.type == "break") { -%>
 			<div class="g-break"><em>*</em><em>*</em><em>*</em></div>
-		<% } %>
+		<% } -%>
 
-		<% if (d.type == "start") { %>
-			<div class="<%= d.value %>">
-		<% } %>
+		<% if (d.type == "start") { -%>
+			<div class="<%= d.value -%>">
+		<% } -%>
 
-		<% if (d.type == "end") { %>
+		<% if (d.type == "end") { -%>
 			</div>
-		<% } %>
+		<% } -%>
 
-		<% if (d.type == "kicker") { %>
-			<div class="g-kicker"><div class="g-inner"><%- d.value %></div></div>
-		<% } %>
+		<% if (d.type == "subhed") { -%>
+			<div class="g-subhed"><%- d.value -%></div>
+		<% } -%>
 
-		<% if (d.type == "headline") { %>
-			<div class="g-headline"><div class="g-inner"><%- d.value %></div></div>
-			</div>
-		<% } %>
+		<% if (d.type == "text") { -%>
+			<div class="g-text"><%- d.value -%></div>
+		<% } -%>
 
-		<% if (d.type == "text") { %>
-			<div class="g-text"><%- d.value %></div>
-		<% } %>
-
-		<% if (d.type == "graphic") { %>
+		<% if (d.type == "graphic") { -%>
 			<div class="g-graphic">
-				<div class="<%= d.asset.replace('div.', '').split('.').join(' ') %>"></div>
+				<div class="g-<%= d.asset.replace('div.', '').split('.').join(' ') -%>"></div>
 			</div>
-		<% } %>
+		<% } -%>
 
-		<% if (d.type == "image") { %>
+		<% if (d.type == "image") { -%>
 			<div class="g-image">
-				<img src="<%= d.asset %>">
-				<% if (d.credit) { %><div class="g-credit"><%= d.credit %></div><% } %>
+				<img src="<%= d.asset -%>">
+				<% if (d.credit) { -%><div class="g-credit"><%= d.credit -%></div><% } -%>
 			</div>
-		<% } %>
+		<% } -%>
 
-	<% }) %>
-
+		<% if (d.type == "promo") { -%>
+			<div class="g-promo">
+				<% if (d.link) { -%><a href="<%= d.link -%>" target="_blank"><% } -%>
+				<div class="g-promo-text-cont">
+					<% if (d.tag) { -%><div class="g-promo-tag"><%= d.tag -%></div><% } -%>
+					<% if (d.hed) { -%><div class="g-promo-hed"><%= d.hed -%></div><% } -%>
+					<% if (d.text) { -%><div class="g-promo-text"><%= d.text -%></div><% } -%>
+				</div>
+				<% if (d.link) { -%></a><% } -%>
+				<div class="g-promo-asset-cont">
+				<% if (d["fb-video"]) { -%>
+					<div class="fb-video" data-href="<%= d['fb-video'] -%>" data-allowfullscreen="false" data-width="auto" data-show-text="false" data-show-captions="false" data-autoplay="false"></div>
+				<% } else if (d.youtube) { -%>
+					<div class="g-youtube-cont">
+					<iframe width="100%" height="100%" src="https://www.youtube.com/embed/<%= d.youtube.split('v=')[1] -%>" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+					</div>
+				<% } else if (d.img) { -%>
+					<div class="g-img-cont">
+						<img src="<%= d.img -%>">
+					</div>
+				<% } -%>
+				</div>
+			</div>
+		<% } -%>
+	<% }) -%>
 </div>
 
-<script src="https://interactive.thestandnews.com/scripts/d3_.js"></script>
-<!-- <script>var data = <%- JSON.stringify(rows) %></script> -->
+<!-- <script src="https://interactive.thestandnews.com/scripts/d3_.js"></script> -->

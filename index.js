@@ -11,96 +11,130 @@ var serveIndex = require('serve-index');
 var SocketServer = require('ws').Server;
 var chokidar = require('chokidar');
 var child = require('child_process');
+var d3 = require("d3v4");
 
+function compile() {
+
+	var out = "";
+
+	var data = {};
+
+	var datafolder = fs.readdirSync(currentPath + "/data");
+
+	datafolder.forEach(function(file){
+
+		if (file == "spritedata.txt") {
+			var dat = fs.readFileSync(currentPath + "/data/" + file, "utf8");
+			dat = dat.split("\n");
+			data.spritedata = dat;
+
+			data.spritedata.forEach(function(d,i){
+				data.spritedata[i] = d.replace("public/sprite/", "").replace(".jpg", "")
+			})
+		} else {
+			var dat = fs.readFileSync(currentPath + "/data/" + file, "utf8");
+			dat = JSON.parse(dat);
+			data[file.replace(".json", "")] = dat;
+		}
+		
+	});
+
+	var processdata = require(currentPath + "/bin/process-data.js", "utf8");
+	data = processdata.process(data);
+
+	var script = fs.readFileSync(currentPath + "/src/script.js", "utf8");
+
+	var c = child.exec("lessc " + currentPath + "/src/style.less " + currentPath + "/public/style.css", (err, stdout, stderr) => {
+
+		if (err) { console.log(err); }
+
+	}).on("exit", function(){
+
+		var html = fs.readFileSync(currentPath + "/src/index.jst.html", "utf8");
+
+		var partial_files = fs.readdirSync(currentPath + "/src/");
+		partial_files = partial_files.filter(d => d.indexOf(".html") > -1 && d.indexOf("index.") == -1)
+
+		var partials = {};
+
+		partial_files.forEach(function(partial){
+			var h = fs.readFileSync(currentPath + "/src/" + partial, "utf8");
+			partials[partial.replace(".html", "")] = h; 
+		})
+
+		var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials});
+
+		if (data.doc.filter(d => d.type == "summary")[0]) {
+			out += "<div class='g-meta' style='display: none;'>" + data.doc.filter(d => d.type == "summary")[0].value + "</div>"
+		} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
+			out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+		}
+
+
+		var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
+		out += "<style>\n";
+		out += style;
+		out += "</style>\n";
+
+		out += ejs_rendered
+
+		out += "\n<script>\n";
+		out += script;
+		out += "\n</script>";
+
+		fs.writeFileSync(currentPath + "/public/index.html", out);
+
+		console.log("Recompiling...");
+	});
+
+}
 
 if (arg == "new") {
 
-	var files = ["/src/index.jst.html", "/src/base.less", "/src/style.less", "/src/script.js", "/Makefile", "/bin/dl-sheet.js", "/bin/dl-doc.js"];
+	var files = ["/src/index.jst.html", "/src/base.less", "/src/style.less", "/src/script.js", "/Makefile", "/bin/dl-sheet.js", "/bin/dl-doc.js", "/bin/process-data.js"];
 
 	if (!fs.existsSync(currentPath + "/src")) {
-			fs.mkdirSync(currentPath + "/src");
+		console.log("Creating src folder...");
+		fs.mkdirSync(currentPath + "/src");
 	}
 
 	if (!fs.existsSync(currentPath + "/bin")) {
-			fs.mkdirSync(currentPath + "/bin");
+		console.log("Creating bin folder...");
+		fs.mkdirSync(currentPath + "/bin");
 	}
 
 	if (!fs.existsSync(currentPath + "/public")) {
-			fs.mkdirSync(currentPath + "/public");
+		console.log("Creating public folder...");
+		fs.mkdirSync(currentPath + "/public");
 	}
 
 	if (!fs.existsSync(currentPath + "/data")) {
-			fs.mkdirSync(currentPath + "/data");
+		console.log("Creating data folder...");
+		fs.mkdirSync(currentPath + "/data");
 	}
 
 	files.forEach(function(f){
+		console.log("Copying " + f + " over...");
 		fs.copyFile(__dirname + f, currentPath + f, (err) => {
 			if (err) throw err;
 		});
 	});
 
+	child.exec("npm install googleapis", function(err, stdout, stderr) {
+		if (err) { console.error(err); return; }
+	});
+
+	child.exec("npm install lessc", function(err, stdout, stderr) {
+		if (err) { console.error(err); return; }
+	});
+
+} else if (arg == "make") {
+
+	compile();
+
 } else {
 
-	function compile() {
-
-		var out = "";
-
-		var doc = [], rows = [];
-
-		if (fs.existsSync(currentPath + "/data/doc.json")) {
-		    doc = fs.readFileSync(currentPath + "/data/doc.json");
-		    doc = JSON.parse(doc);
-		}
-
-		if (fs.existsSync(currentPath + "/data/rows.json")) {
-		    rows = fs.readFileSync(currentPath + "/data/rows.json");
-		    rows = JSON.parse(rows);
-		}
-
-		var script = fs.readFileSync(currentPath + "/src/script.js", "utf8");
-
-		var c = child.exec("lessc " + currentPath + "/src/style.less " + currentPath + "/public/style.css");
-
-		c.on("exit", function(){
-
-			var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
-			out += "<style>\n";
-			out += style;
-			out += "</style>\n"
-
-			var html = fs.readFileSync(currentPath + "/src/index.jst.html", "utf8");
-
-			out += ejs.render(html, {doc: doc, rows: rows});
-
-			out += "\n<script>\n";
-			out += script;
-			out += "\n</script>";
-
-			fs.writeFileSync(currentPath + "/public/index.html", out);
-
-
-			fs.readdir(currentPath + "/src", function(err, files){
-				
-				files = files.filter(d => d.indexOf("index") == -1 && d.indexOf(".jst.html") > -1);
-
-				files.forEach(function(file){
-					var out = "";
-
-					out += "<style>\n";
-					out += style;
-					out += "</style>\n"
-
-					var html = fs.readFileSync(currentPath + "/src/" + file, "utf8");
-					
-					out += ejs.render(html, {doc: doc, rows: rows, script: script});
-					fs.writeFileSync(currentPath + "/public/" + file.replace(".jst.html", ".html"), out);
-				})
-			})
-
-			console.log("Recompiling...");
-		});
-
-	}
+	compile();
 
 	fs.watch(currentPath + '/src', (eventType, filename) => {
 		console.log(filename + " changed...");
@@ -120,9 +154,7 @@ if (arg == "new") {
 	dir = require('path').resolve(dir) + '/'
 
 
-
 	// set up express static server with a websocket
-	compile();
 	var server = express()
 		.get('*', injectHTML)
 		.use(serveStatic(dir))
@@ -164,8 +196,5 @@ if (arg == "new") {
 			var msg = {path, type, str}
 			wss.clients.forEach(d => d.send(JSON.stringify(msg)))
 		})
-
-
-
 
 }
