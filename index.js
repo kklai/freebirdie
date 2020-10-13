@@ -15,8 +15,6 @@ var d3 = require("d3v4");
 
 function compile() {
 
-	var out = "";
-
 	var data = {};
 
 	var datafolder = fs.readdirSync(currentPath + "/data");
@@ -36,11 +34,16 @@ function compile() {
 			dat = JSON.parse(dat);
 			data[file.replace(".json", "")] = dat;
 		}
-		
 	});
 
 	var processdata = require(currentPath + "/bin/process-data.js", "utf8");
 	data = processdata.process(data);
+
+	var settings;
+	if (fs.existsSync(currentPath + "/settings.json")) {
+		settings = fs.readFileSync(currentPath + "/settings.json", "utf8");
+		settings = JSON.parse(settings);
+	}
 
 	var script = fs.readFileSync(currentPath + "/src/script.js", "utf8");
 
@@ -59,30 +62,62 @@ function compile() {
 
 		partial_files.forEach(function(partial){
 			var h = fs.readFileSync(currentPath + "/src/" + partial, "utf8");
-			partials[partial.replace(".html", "")] = h; 
+			partials[partial.replace(".html", "")] = ejs.render(h, {data: data, d3: d3}); 
 		})
 
-		var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials});
+		if (settings && settings.pages) {
 
-		if (data.doc.filter(d => d.type == "summary")[0]) {
-			out += "<div class='g-meta' style='display: none;'>" + data.doc.filter(d => d.type == "summary")[0].value + "</div>"
-		} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
-			out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+			settings.pages.forEach(function(page){
+
+				var out = "";
+
+				var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials, page: page});
+
+				if (data[page] && data[page].filter(d => d.type == "summary")[0]) {
+					out += "<div class='g-meta' style='display: none;'>" + data[page].filter(d => d.type == "summary")[0].value + "</div>"
+				} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
+					out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+				}
+
+				var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
+				out += "<style>\n";
+				out += style;
+				out += "</style>\n";
+
+				out += ejs_rendered
+
+				out += "\n<script>\n";
+				out += script;
+				out += "\n</script>";
+
+				fs.writeFileSync(currentPath + "/public/" + page + ".html", out);
+			})
+
+		} else {
+
+			var out = "";
+
+			var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials});
+
+			if (data.doc.filter(d => d.type == "summary")[0]) {
+				out += "<div class='g-meta' style='display: none;'>" + data.doc.filter(d => d.type == "summary")[0].value + "</div>"
+			} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
+				out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+			}
+
+			var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
+			out += "<style>\n";
+			out += style;
+			out += "</style>\n";
+
+			out += ejs_rendered
+
+			out += "\n<script>\n";
+			out += script;
+			out += "\n</script>";
+
+			fs.writeFileSync(currentPath + "/public/index.html", out);
 		}
-
-
-		var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
-		out += "<style>\n";
-		out += style;
-		out += "</style>\n";
-
-		out += ejs_rendered
-
-		out += "\n<script>\n";
-		out += script;
-		out += "\n</script>";
-
-		fs.writeFileSync(currentPath + "/public/index.html", out);
 
 		console.log("Recompiling...");
 	});

@@ -24,7 +24,13 @@
 
 		<% if (d.type == "graphic") { -%>
 			<div class="g-graphic">
+				<% if (partials[d.asset]) { %>
+				<div class="g-ai2html g-ai2html-<%= d.asset.split('-')[0] %>">
+					<%- partials[d.asset] %>
+				</div>
+				<% } else { %>
 				<div class="g-<%= d.asset.replace('div.', '').split('.').join(' ') -%>"></div>
+				<% } %>
 			</div>
 		<% } -%>
 
