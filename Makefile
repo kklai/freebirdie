@@ -15,3 +15,16 @@ poster:
 sprite:
 	montage public/sprite/*.jpg \
 	-tile 10x -geometry 50x50+0+0 -background none public/people.jpg
+	ls public/sprite/*.jpg | awk ' BEGIN { ORS = ""; print "["; } { print "\/\@"$0"\/\@"; } END { print "]"; }' | sed "s^\"^\\\\\"^g;s^\/\@\/\@^\", \"^g;s^\/\@^\"^g" > data/spritedata.json
+
+copy:
+	pbcopy < public/index.html
+
+copya:
+	pbcopy < public/_index.html
+
+copyb:
+	pbcopy < public/_cssscript.html
+
+upload:
+	gsutil cp public/* gs://interactive.thestandnews.com/FOLDER

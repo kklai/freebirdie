@@ -18,7 +18,7 @@ function compile() {
 	var data = {};
 
 	var datafolder = fs.readdirSync(currentPath + "/data");
-
+	datafolder = datafolder.filter(d => d != '.DS_Store')
 	datafolder.forEach(function(file){
 
 		if (file == "spritedata.txt") {
@@ -58,25 +58,34 @@ function compile() {
 		var partial_files = fs.readdirSync(currentPath + "/src/");
 		partial_files = partial_files.filter(d => d.indexOf(".html") > -1 && d.indexOf("index.") == -1)
 
-		var partials = {};
+		var partials = {};		
 
 		partial_files.forEach(function(partial){
 			var h = fs.readFileSync(currentPath + "/src/" + partial, "utf8");
-			partials[partial.replace(".html", "")] = ejs.render(h, {data: data, d3: d3}); 
+			partials[partial.replace(".html", "")] = ejs.render(h, {data: data, d3: d3, fs: fs}); 
 		})
 
 		if (settings && settings.pages) {
 
 			settings.pages.forEach(function(page){
 
-				var out = "";
+				var out = '';
+				var outhtml = '';
+				var outcsscript = '';
 
-				var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials, page: page});
+				html = fs.readFileSync(currentPath + "/src/" + page + ".jst.html", "utf8");
+				// html = fs.readFileSync(currentPath + "/src/" + "index" + ".jst.html", "utf8");
 
-				if (data[page] && data[page].filter(d => d.type == "summary")[0]) {
-					out += "<div class='g-meta' style='display: none;'>" + data[page].filter(d => d.type == "summary")[0].value + "</div>"
+				var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials, page: page, fs: fs});
+
+				var docname = page == "index" ? "doc" : page;
+
+				if (data[docname] && data[docname].filter(d => d.type == "summary")[0]) {
+					out += "<div class='g-meta' style='display: none;'>" + data[docname].filter(d => d.type == "summary")[0].value + "</div>"
+					outhtml += "<div class='g-meta' style='display: none;'>" + data[docname].filter(d => d.type == "summary")[0].value + "</div>"
 				} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
 					out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+					outhtml += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
 				}
 
 				var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
@@ -84,25 +93,46 @@ function compile() {
 				out += style;
 				out += "</style>\n";
 
-				out += ejs_rendered
+				outcsscript += "<style>\n";
+				outcsscript += style;
+				outcsscript += "</style>\n";
+
+				outhtml += "<style>\n";
+				outhtml += style;
+				outhtml += "</style>\n";
+
+				out += ejs_rendered;
+				outhtml += ejs_rendered;
 
 				out += "\n<script>\n";
 				out += script;
 				out += "\n</script>";
 
+				outcsscript += '\n<script src="https://interactive.thestandnews.com/scripts/d3_.js"></script>\n'
+				outcsscript += "\n<script type='application/javascript'>\n{function onload() {\n";
+				outcsscript += script;
+				outcsscript += "\n}window.addEventListener('load', onload);\n}\n</script>";
+
 				fs.writeFileSync(currentPath + "/public/" + page + ".html", out);
+
+				fs.writeFileSync(currentPath + "/public/_index_" + page + ".html", outhtml);
+				fs.writeFileSync(currentPath + "/public/_cssscript_" + page + ".html", outcsscript);
 			})
 
 		} else {
 
-			var out = "";
+			var out = '<meta charset="utf-8">\n';
+			var outhtml = '<meta charset="utf-8">\n';
+			var outcsscript = '';
 
-			var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials});
+			var ejs_rendered = ejs.render(html, {data: data, d3: d3, partials: partials, fs: fs});
 
 			if (data.doc.filter(d => d.type == "summary")[0]) {
 				out += "<div class='g-meta' style='display: none;'>" + data.doc.filter(d => d.type == "summary")[0].value + "</div>"
+				outhtml += "<div class='g-meta' style='display: none;'>" + data.doc.filter(d => d.type == "summary")[0].value + "</div>"
 			} else if (ejs_rendered.split('<div class="g-text">').length > 1) {
 				out += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
+				outhtml += "<div class='g-meta' style='display: none;'>" + ejs_rendered.split('<div class="g-text">')[1].split('</div>')[0] + "</div>"
 			}
 
 			var style = fs.readFileSync(currentPath + "/public/style.css", "utf8");
@@ -110,13 +140,30 @@ function compile() {
 			out += style;
 			out += "</style>\n";
 
-			out += ejs_rendered
+			outcsscript += "<style>\n";
+			outcsscript += style;
+			outcsscript += "</style>\n";
+
+			outhtml += "<style>\n";
+			outhtml += style;
+			outhtml += "</style>\n";
+
+			out += ejs_rendered.split("\n").join("").split("\t").join("");
+			outhtml += ejs_rendered.split("<script")[0];
+
+			outcsscript += '\n<script src="https://interactive.thestandnews.com/scripts/d3_.js"></script>\n'
+			outcsscript += '\n' + out.split('<script src="https://interactive.thestandnews.com/scripts/d3_.js"></script>')[1] + '\n'
+			outcsscript += "\n<script type='application/javascript'>\n{function onload() {\n";
+			outcsscript += script;
+			outcsscript += "\n}window.addEventListener('load', onload);\n}\n</script>";
 
 			out += "\n<script>\n";
 			out += script;
 			out += "\n</script>";
 
 			fs.writeFileSync(currentPath + "/public/index.html", out);
+			fs.writeFileSync(currentPath + "/public/_index.html", outhtml);
+			fs.writeFileSync(currentPath + "/public/_cssscript.html", outcsscript);
 		}
 
 		console.log("Recompiling...");

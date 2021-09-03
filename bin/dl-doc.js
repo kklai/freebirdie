@@ -102,10 +102,18 @@ function printDocTitle(auth) {
               text += "<strong>"
             }
 
+            if (t != ":ignore" && t != "" && el.textRun.textStyle.italic) {
+              text += "<em>"
+            }
+
             text += t;
 
             if (t != ":ignore" && t != "" && el.textRun.textStyle.bold) {
               text += "</strong>"
+            }
+
+            if (t != ":ignore" && t != "" && el.textRun.textStyle.italic) {
+              text += "</em>"
             }
           }
         })
